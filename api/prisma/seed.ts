@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
+import * as bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Clear old data (children first, then parents) so the seed can be re-run safely
+  // Clear old catalog data (children first, then parents) so the seed can be re-run safely
   await prisma.review.deleteMany();
   await prisma.book.deleteMany();
   await prisma.genre.deleteMany();
@@ -58,9 +59,23 @@ async function main() {
     });
   }
 
+  // Demo accounts. Passwords are stored as bcrypt hashes, never as plain text.
+  const librarianHash = await bcrypt.hash("Librarian123!", 10);
+  await prisma.user.upsert({
+    where: { email: "librarian@example.com" },
+    update: { password: librarianHash, role: "LIBRARIAN" },
+    create: { email: "librarian@example.com", password: librarianHash, role: "LIBRARIAN" },
+  });
+  const patronHash = await bcrypt.hash("Patron123!", 10);
+  await prisma.user.upsert({
+    where: { email: "patron@example.com" },
+    update: { password: patronHash, role: "PATRON" },
+    create: { email: "patron@example.com", password: patronHash, role: "PATRON" },
+  });
+
   const genreCount = await prisma.genre.count();
   const bookCount = await prisma.book.count();
-  console.log(`Seed complete: ${genreCount} genres, ${bookCount} books`);
+  console.log(`Seed complete: ${genreCount} genres, ${bookCount} books, 2 demo users`);
 }
 
 main()
