@@ -181,3 +181,45 @@ Prisma CLI and client versions, and fixing a mismatch where the CLI had moved
 to a newer major version than the client. It was slower up front, but I now
 understand how the pieces fit together, and the strict structure is what
 makes the relationships and data integrity explicit.
+
+## Book API, Auth & Authorization
+
+### Environment variables
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | Secret used to sign and verify login tokens |
+
+Copy `api/.env.example` to `api/.env` and fill in real values. The real `.env` is git-ignored.
+
+### Endpoints
+
+| Method | Route | Access | Description |
+|---|---|---|---|
+| POST | `/auth/register` | Public | Create a PATRON account (password hashed with bcrypt) |
+| POST | `/auth/login` | Public, limited to 5 per minute | Returns `{ "access_token": "..." }` |
+| GET | `/users/profile` | Logged in | The authenticated user, read from `req.user` |
+| GET | `/genres`, `/genres/:id` | Public | List or read genres |
+| POST, PATCH, DELETE | `/genres`, `/genres/:id` | LIBRARIAN | Create, update, delete a genre |
+| GET | `/books` | Public | List books with filters and pagination |
+| GET | `/books/:id` | Public | Read one book |
+| POST, PATCH, DELETE | `/books`, `/books/:id` | LIBRARIAN | Create, update, delete a book |
+
+`GET /books` query parameters: `genreId` (filter), `search` (title or author, case-insensitive),
+`page` (default 1) and `limit` (default 10, max 100). The response is
+`{ "data": [...], "meta": { "total", "page", "limit", "totalPages" } }`.
+
+### Auth and roles
+
+- Send the token as `Authorization: Bearer <access_token>`.
+- `JwtAuthGuard` checks the token (401 if missing or invalid).
+- `RolesGuard` with `@Roles('LIBRARIAN')` checks `req.user.role` (403 if not allowed).
+- Registration always creates a PATRON. The seed creates a demo librarian
+  (`librarian@example.com` / `Librarian123!`) and a demo patron
+  (`patron@example.com` / `Patron123!`). These are demo credentials for local development only.
+- `ValidationPipe({ whitelist: true })` validates every request body and strips unknown fields.
+
+### Postman
+
+Import `docs/postman_collection.json` into Postman and run the requests from the top.
