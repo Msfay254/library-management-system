@@ -64,3 +64,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /.cursor
 /.devin
 /AGENTS.md
+
+# Generated lockfile, not tracked in this repository
+package-lock.json
